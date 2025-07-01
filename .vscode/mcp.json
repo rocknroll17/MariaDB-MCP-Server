@@ -1,0 +1,8 @@
+{
+  "servers": {
+    "mariadb-mcp-server": {
+      "url": "http://localhost:9001/sse",
+      "type": "sse"
+    }
+  }
+}
