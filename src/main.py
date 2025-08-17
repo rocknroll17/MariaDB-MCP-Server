@@ -1,12 +1,12 @@
+from logger.logger import Logger
+Logger()
 import argparse
 import logging
-from fastmcp import FastMCP
 import anyio
 from functools import partial
 from server import MariaDBServer
-from logger import logger
 
-logger = logging.getLogger(__name__)
+logger = Logger.getLogger()
 
 parser = argparse.ArgumentParser(description="MariaDB MCP Server")
 parser.add_argument('--transport', type=str, default='sse', choices=['stdio', 'sse'], help='MCP transport protocol (stdio or sse)')
