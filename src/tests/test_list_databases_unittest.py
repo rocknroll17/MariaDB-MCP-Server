@@ -1,6 +1,5 @@
 import unittest
 from unittest.mock import AsyncMock, patch
-import asyncio
 
 # Import the MariaDBServer from the project
 from src.server import MariaDBServer

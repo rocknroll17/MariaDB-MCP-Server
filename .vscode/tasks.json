@@ -1,0 +1,174 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Setup Network",
+            "type": "shell",
+            "command": "sh",
+            "args": [
+                "-c",
+                "docker network create mcp-network 2>/dev/null || true"
+            ],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Build",
+            "type": "shell",
+            "command": "docker",
+            "args": [
+                "build",
+                "-t",
+                "mariadb-mcp-server",
+                "."
+            ],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Stop",
+            "type": "shell",
+            "command": "sh",
+            "args": [
+                "-c",
+                "docker stop mcp-server mariadb-mcp-server 2>/dev/null || true"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Delete",
+            "type": "shell",
+            "command": "sh",
+            "dependsOn": [
+                "Stop"
+            ],
+            "args": [
+                "-c",
+                "docker rm mcp-server mariadb-mcp-server 2>/dev/null || true"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Run from Image",
+            "type": "shell",
+            "command": "sh",
+            "args": [
+                "-c",
+                "docker run --name mariadb-mcp-server --network mcp-network -p 9001:9001 -e DB_HOST=mariadb-10.8.6 -e DB_PORT=3306 -e DB_USER=root -e DB_PASSWORD=qwe123 -e DB_NAME=billing_upbox -e MCP_READ_ONLY=true -e MCP_MAX_POOL_SIZE=10 mariadb-mcp-server"
+            ],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": [],
+            "isBackground": true
+        },
+                {
+            "label": "Run from Image with Stop",
+            "type": "shell",
+            "command": "sh",
+            "dependsOn": [
+                "Stop",
+                "Delete"
+            ],
+            "args": [
+                "-c",
+                "docker run --name mariadb-mcp-server --network mcp-network -p 9001:9001 -e DB_HOST=mariadb-10.8.6 -e DB_PORT=3306 -e DB_USER=root -e DB_PASSWORD=qwe123 -e DB_NAME=billing_upbox -e MCP_READ_ONLY=true -e MCP_MAX_POOL_SIZE=10 mariadb-mcp-server"
+            ],
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": [],
+            "isBackground": true
+        },
+        {
+            "label": "Initial Start MCP Server",
+            "type": "shell",
+            "command": "echo",
+            "args": ["🚀 Starting MCP Server with MariaDB..."],
+            "group": "build",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "Setup Network",
+                "Build",
+                "Stop",
+                "Delete",
+                "Run from Image"
+            ],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Start",
+            "type": "shell",
+            "command": "docker",
+            "args": [
+                "start",
+                "mariadb-mcp-server"
+            ],
+            "group": "build",
+            "dependsOrder": "sequence",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Restart",
+            "type": "shell",
+            "command": "echo",
+            "args": ["🔄 Restarting MCP Server..."],
+            "group": "build",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "Stop",
+                "Start"
+            ],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        }
+    ]
+}

@@ -11,4 +11,4 @@ uv.lock
 .DS_Store
 .env
 .env
-tasks.json
+venv/

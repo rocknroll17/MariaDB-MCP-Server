@@ -1,18 +1,11 @@
-import os
 import logging
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-
-from config import (
-    LOG_LEVEL,
-    LOG_FILE_PATH,
-    LOG_MAX_BYTES,
-    LOG_BACKUP_COUNT
-)
+from config import LOG_LEVEL
 
 # Get the root logger
 root_logger = logging.getLogger()
-root_logger.setLevel(getattr(logging, LOG_LEVEL, logging.INFO))
+root_logger.setLevel(LOG_LEVEL)
 
 # Create formatter
 log_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -26,14 +19,15 @@ console_handler = logging.StreamHandler()
 console_handler.setFormatter(log_formatter)
 root_logger.addHandler(console_handler)
 
-# File Handler - Ensure log directory exists
-log_file = Path(LOG_FILE_PATH)
-log_file.parent.mkdir(parents=True, exist_ok=True)
+# File Handler - Create logs directory and set 7-day rotation
+logs_dir = Path(__file__).parent.parent.parent / "logs"
+logs_dir.mkdir(parents=True, exist_ok=True)
+log_file = logs_dir / "server.log"
 
 file_handler = RotatingFileHandler(
     log_file,
-    maxBytes=LOG_MAX_BYTES,
-    backupCount=LOG_BACKUP_COUNT
+    maxBytes=10 * 1024 * 1024,  # 10MB per file
+    backupCount=7  # Keep 7 backup files (7 days)
 )
 file_handler.setFormatter(log_formatter)
 root_logger.addHandler(file_handler)

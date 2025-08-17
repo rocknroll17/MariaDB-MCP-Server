@@ -9,6 +9,7 @@ The MCP MariaDB Server provides a Model Context Protocol (MCP) interface for man
 - [Overview](#overview)
 - [Core Components](#core-components)
 - [Available Tools](#available-tools)
+- [Available Prompts](#available-prompts)
 - [Configuration & Environment Variables](#configuration--environment-variables)
 - [Setup](#setup)
 - [Integration - Claude desktop/Cursor/Windsurf/VS Code](#integration---claude-desktopcursorwindsurfvs-code)
@@ -22,8 +23,8 @@ The MCP MariaDB Server exposes a set of tools for interacting with MariaDB datab
 - Listing databases and tables
 - Retrieving table schemas
 - Executing safe, read-only SQL queries
-- Query performance analysis with EXPLAIN and EXPLAIN EXTENDED
-- Comprehensive tool usage guide for LLM self-discovery
+- Query performance analysis with EXPLAIN
+- Providing prompt templates for common database tasks
 
 ---
 
@@ -43,6 +44,8 @@ The MCP MariaDB Server exposes a set of tools for interacting with MariaDB datab
 
 - **list_databases**
   - Lists all accessible databases.
+  - Notice which database to use
+  - Give some usage guide
   - Parameters: _None_
 
 - **list_tables**
@@ -65,21 +68,23 @@ The MCP MariaDB Server exposes a set of tools for interacting with MariaDB datab
 ### Query Performance Analysis Tools
 
 - **explain_query**
-  - Executes EXPLAIN on a SQL query to show the execution plan for performance analysis.
-  - Parameters: `sql_query` (string, required), `database_name` (string, required), `parameters` (list, optional)
-  - _Note: Helps analyze query performance and optimization opportunities. Does not execute the actual query._
-
-- **explain_query_extended**
   - Executes EXPLAIN EXTENDED on a SQL query to show detailed execution plan with additional information.
   - Parameters: `sql_query` (string, required), `database_name` (string, required), `parameters` (list, optional)
   - _Note: Provides comprehensive analysis including filtered rows percentage and extra optimization details._
 
-### Tool Discovery & Usage Guide
-**! Note: You have to give prompt to your LLM understand this tool**  
-`EXAMPLE: "First of all. There is a get_usage_guide tool that helps you understand how to use MCP tools."`
-- **get_usage_guide**
-  - Provides comprehensive usage guide for all available MCP tools with examples and best practices.
-  - Parameters: _None_
+## Available Prompts
+
+- **explain_table**
+  - Provides a detailed explanation of a database table's structure, relationships, and usage.
+  - Parameters: `table_name` (string, required)
+
+- **query_tuning**
+  - Analyzes a SQL query for performance optimization opportunities.
+  - Parameters: `original_query` (string, required)
+
+- **migration_code**
+  - Generates SQL code for safely migrating a database table.
+  - Parameters: `table_name` (string, required), `migration_description` (string, required)
 
 ---
 
@@ -96,6 +101,10 @@ All configuration is via environment variables (typically set in a `.env` file):
 | `DB_NAME`              | Default database (optional; can be set per query)      | No       |              |
 | `MCP_READ_ONLY`        | Enforce read-only SQL mode (`true`/`false`)            | No       | `true`       |
 | `MCP_MAX_POOL_SIZE`    | Max DB connection pool size                            | No       | `10`         |
+| `MCP_AUTH_ENABLED`      | Enable MCP authentication (`true`/`false`)            | No       | `false`      |
+| `ENCRYPTION_KEY`       | Key for encrypting user IDs (32 bytes)                  | No       |              |
+| `SIGNING_KEY`          | Key for signing tokens (required if `MCP_AUTH_ENABLED=true`) | No       |              |
+| `API_KEYS`          | JSON array of API keys for authentication (required if `MCP_AUTH_ENABLED=true`) | No       | `[]`         |
 
 #### Example `.env` file
 
@@ -108,6 +117,11 @@ DB_NAME=your_default_database
 
 MCP_READ_ONLY=true
 MCP_MAX_POOL_SIZE=10
+
+MCP_AUTH_ENABLED=true
+ENCRYPTION_KEY=EmL8QakI4j4W...
+SIGNING_KEY=key...
+API_KEYS=["WSgFMWo_0_ThMDQ....","JTFtQBTFE825iVbohnR...."]
 ```
 
 ---
@@ -116,40 +130,44 @@ MCP_MAX_POOL_SIZE=10
 
 ## If you are not using Docker for MariaDB.(Installed on your local machine or remote server)
 
-1. **Build the MCP server**
+### Build the MCP server
 ```bash
 docker build -t mcp-server .
 ```
 
-2. **Run the MCP server container**
+### Run the MCP server container
 ```bash
 docker run -d \
   --name mcp-server \
-  -e DB_HOST= {host.docker.internal or your-mariadb-host-ip} \
+  -e DB_HOST={mariadb-hostname-or-ip} \
   -e DB_USER={mariadb-username} \
   -e DB_PASSWORD={mariadb-password} \
   -e DB_PORT=3306 \
   -e DB_NAME={mariadb-database-name} \
   -e MCP_READ_ONLY=true \
   -e MCP_MAX_POOL_SIZE=10 \
+  -e MCP_AUTH_ENABLED=true \
+  -e ENCRYPTION_KEY={your-32-byte-encryption-key} \
+  -e SIGNING_KEY={your-signing-key} \
+  -e API_KEYS='["{your-api-key-1}","{your-api-key-2}"]' \
   -p 9001:9001 \
   mcp-server
 ```
 
 ## If you using MariaDB with Docker
 
-1. **Create network for MariaDB and MCP server connection**
+### Create network for MariaDB and MCP server connection
 ```bash
 docker network create mariadb-mcp-network
 docker network connect mariadb-mcp-network {mariadb-container-name}
 ```
 
-2. **Build the Docker image for the MCP server**
+### Build the Docker image for the MCP server
 ```bash
 docker build -t mcp-server .
 ```
 
-3. **Run the MCP server container**
+### Run the MCP server container
 ```bash
 docker run -d \
   --name mcp-server \
@@ -161,6 +179,10 @@ docker run -d \
   -e DB_NAME={mariadb-database-name} \
   -e MCP_READ_ONLY=true \
   -e MCP_MAX_POOL_SIZE=10 \
+  -e MCP_AUTH_ENABLED=true \
+  -e ENCRYPTION_KEY={your-32-byte-encryption-key} \
+  -e SIGNING_KEY={your-signing-key} \
+  -e API_KEYS='["{your-api-key-1}","{your-api-key-2}"]' \
   -p 9001:9001 \
   mcp-server
 ```
@@ -187,22 +209,39 @@ If you prefer to run the MCP server without Docker, you can do so by following t
 
 ---
 
-## Integration - Cursor/VS Code/Claude Code
-### VS Code -> `.vscode/settings.json`
-### Cursor -> `~/.cursor/settings.json`
+## Integration - Claude desktop/Cursor/Windsurf/VS Code
+### VS Code -> `.vscode/mcp.json`
 ```json
 {
-  "mcp": {
-    "server": {
-      "url": "http://localhost:9001/sse",
-      "type": "sse"
+  "servers": {
+    "mariadb-mcp-server": {
+      "url": "http://localhost:9001/sse/",
+      "type": "sse",
+      "headers": {
+        "Authorization": "Bearer {your-api-key}"
+      }
     }
   }
 }
 ```
+### Cursor -> `~/.cursor/mcp.json`
+```json
+{
+  "servers": {
+    "mariadb-mcp-server": {
+      "url": "http://localhost:9001/sse/",
+      "type": "sse",
+      "headers": {
+        "Authorization": "Bearer {your-api-key}"
+      }
+    }
+  }
+}
+```
+
 ### Claude Code
-```sh
-claude mcp add --transport sse mcp-server http://localhost:9001/sse
+```
+claude mcp add --transport sse mariadb-mcp-server  http://localhost:9001/sse/
 ```
 ---
 

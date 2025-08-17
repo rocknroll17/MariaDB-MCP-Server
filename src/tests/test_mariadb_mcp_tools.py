@@ -1,10 +1,6 @@
 # -*- coding: utf-8 -*-
 import unittest
-from unittest.mock import AsyncMock, patch
 import asyncio
-
-import sys
-import os
 
 # Import the MariaDBServer from the project
 from server import MariaDBServer
@@ -47,21 +43,21 @@ class TestMariaDBMCPTools(unittest.IsolatedAsyncioTestCase):
     def tearDown(self):
         self.server.close_pool()
 
-    async def test_step_1_list_databases(self):
-        """
-        Test: Call mcp0_list_databases.
-        Purpose: Verify it returns a list of database names.
-        Expected Outcome: Success, returns a JSON list of strings (database names).
-        """
-        result = await self.server.list_databases()
-        self.assertIsInstance(result, list)
-        self.assertTrue(all(isinstance(db, str) for db in result))
-        for sys_db in ["mysql", "sys"]:
-            self.assertIn(sys_db, result)
-
 # If this file is run directly, run the tests
 if __name__ == "__main__":
     unittest.main()
+
+async def test_step_1_list_databases(self):
+    """
+    Test: Call mcp0_list_databases.
+    Purpose: Verify it returns a list of database names.
+    Expected Outcome: Success, returns a JSON list of strings (database names).
+    """
+    result = await self.server.list_databases()
+    self.assertIsInstance(result, list)
+    self.assertTrue(all(isinstance(db, str) for db in result))
+    for sys_db in ["mysql", "sys"]:
+        self.assertIn(sys_db, result)
 
 def test_step_2_list_tables_valid_db():
     """
